@@ -3,8 +3,8 @@ if exists('g:loaded_blockalign_nvim') | finish | endif " prevent loading file tw
 let s:save_cpo = &cpo
 set cpo&vim
 
-vmap <silent> <Leader>a= lua require("blockalign").align_with("=")
-vmap <silent> <Leader>a: lua require("blockalign").align_with(":")
+vmap <silent> <Leader>a= :lua require("blockalign").align_with("=")<CR>
+vmap <silent> <Leader>a: :lua require("blockalign").align_with(":")<CR>
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
