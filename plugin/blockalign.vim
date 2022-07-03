@@ -4,6 +4,7 @@ let s:save_cpo = &cpo
 set cpo&vim
 
 vmap <silent> <Leader>a= lua require("blockalign").align_with("=")
+vmap <silent> <Leader>a: lua require("blockalign").align_with(":")
 
 let &cpo = s:save_cpo
 unlet s:save_cpo

@@ -1,6 +1,7 @@
 local function protect_register(f)
   local reg, reg_type, old_reg, old_reg_type
 
+  ---@diagnostic disable-next-line: missing-parameter
   old_reg      = vim.fn.getreg('"')
   old_reg_type = vim.fn.getregtype('"')
 
@@ -11,6 +12,7 @@ local function protect_register(f)
     vim.api.nvim_exec("silent normal gvVy", false)
   end
 
+  ---@diagnostic disable-next-line: missing-parameter
   reg      = vim.fn.getreg('"')
   reg_type = vim.fn.getregtype('"')
 
@@ -76,6 +78,7 @@ local function convert_lines(sign, lines)
   end
 
   sign_col = sign_col + 1
+  ---@diagnostic disable-next-line: param-type-mismatch
   local lw = string.rep(" ", leading_spaces)
 
   for i, l in ipairs(l_parts) do
@@ -108,6 +111,7 @@ local function align_with(sign)
     vim.api.nvim_command("normal gvp")
   end)
 end
+
 
 return {
   align_with = align_with,
