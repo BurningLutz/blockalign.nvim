@@ -14,74 +14,112 @@ local function protect_register(f)
   reg      = vim.fn.getreg('"')
   reg_type = vim.fn.getregtype('"')
 
-  f(reg, reg_type)
+  local ret = f(reg, reg_type)
 
   vim.fn.setreg('"', old_reg, old_reg_type)
+
+  return ret
 end
 
 local function align_with(sign)
-  protect_register(function (content)
+  protect_register(function (content, reg_type)
     local strings = {}
     local outputs = {}
     local l_parts = {}
     local r_parts = {}
+    local sign_col = 1
+    local current_block = nil
+    local current_block_col = nil
+    local leading_spaces = nil
 
-    for str in string.gmatch(content, "[^\n]+") do
-      strings:insert(str)
+    local n = 0
+    for str in content:gmatch("[^\n]+") do
+      n = n + 1
 
-      local l_part = str:match("^ *(.-) *"..sign)
-      l_parts:insert(l_part)
+      table.insert(strings, str)
 
-      local r_part = str:match(sign.." *(.-) *$")
-      if r_part ~= nil then
-        r_parts:insert(r_part)
+      if leading_spaces == nil then
+        local ix = str:find(sign)
+        if ix ~= nil then
+          leading_spaces = str:match("^ *"):len()
+        end
+      end
+
+      if current_block ~= nil then
+        local l_ix, r_ix = str:match("^ *().-() *$")
+        if l_ix >= current_block_col then
+          local sub = str:sub(current_block_col, r_ix - 1)
+          table.insert(r_parts[current_block], sub)
+
+          goto continue
+        end
+      end
+
+      local l_part = str:match("^ *(.-) *"..sign) or ""
+      table.insert(l_parts, l_part)
+      if l_part:len() > sign_col then
+        sign_col = l_part:len()
+      end
+
+      local ix, r_part = str:match(sign.." *()(.-) *$")
+      if ix ~= nil then
+        table.insert(r_parts, {r_part})
+        current_block = n
+        current_block_col = ix
       else
-        r_parts:insert(str)
+        table.insert(r_parts, {str})
+        current_block = nil
+        current_block_col = nil
+      end
+
+      ::continue::
+    end
+
+    sign_col = sign_col + 1
+    local lw = string.rep(" ", leading_spaces)
+
+    for i, l in ipairs(l_parts) do
+      if l:len() == 0 then
+        table.insert(outputs, r_parts[i][1])
+      else
+        for j, r in ipairs(r_parts[i]) do
+          if j == 1 then
+            local lp = string.rep(" ", sign_col - l:len())
+            local rp = " "
+            table.insert(outputs, lw..l..lp..sign..rp..r)
+          else
+            local lp = string.rep(" ", sign_col + sign:len() + 1)
+            table.insert(outputs, lw..lp..r)
+          end
+        end
       end
     end
 
-    local leading_spaces
-    for _, str in ipairs(strings) do
-      local l, _ = str:find(sign)
-
-      if l ~= nil then
-        leading_spaces = str:match("^ *"):len()
-        break
-      end
-    end
-
-    if leading_spaces == nil then
-      return strings
-    end
-
-    for i, str in ipairs(strings) do
-    end
-
-    local rb = math.max(unpack(sign_ix))
-
-    if rb == 0 then
-      return
-    end
-
-    for i, str in ipairs(strings) do
-      local pos   = sign_ix[i]
-      local count = rb - pos
-
-      local lsym = str:sub(1, pos - 1):match("^ *(.-) *$")
-      local rsym = str:sub(pos + 1):match("^ *(.*)$")
-    end
-
-
-    for i, v in ipairs(sign_ix) do
-    end
-
-    print(vim.inspect(sign_ix))
+    local output = table.concat(outputs, "\n")
+    vim.fn.setreg('"', output, reg_type)
+    vim.api.nvim_command("normal gvp")
   end)
 end
 
-protect_register(function (reg, reg_type)
-end)
+align_with("===")
 
-
--- TODO leading space should always be preserved
--- align_with("=")
+-- a        === 1 2455234 2    
+--   sdfsdf    ===  sdf4234  
+--  f ===       { 1   
+--                2
+--                3
+--                4
+--                k === 3
+--              }
+--  # sdfgjklsdgjfdkg
+--  g   ===  true
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
