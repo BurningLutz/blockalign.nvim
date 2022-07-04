@@ -33,9 +33,10 @@ end
 
 local function convert_lines(sep, lines)
   local n              = 0
-  local outputs        = {}
   local lhss           = {}
   local rhss           = {}
+  local outputs        = {}
+  local safe_sep       = sep:gsub("([^%w])", "%%%1")
   local lhs_maxlen     = 0
   local current_block  = nil
   local leading_spaces = nil
@@ -62,13 +63,13 @@ local function convert_lines(sep, lines)
       end
     end
 
-    lhs     = str:match("^ *(.-) *"..sep)
+    lhs     = str:match("^ *(.-) *"..safe_sep)
     lhss[n] = lhs
     if lhs ~= nil and lhs:len() > lhs_maxlen then
       lhs_maxlen = lhs:len()
     end
 
-    ix, rhs = str:match(sep.." *()(.-) *$")
+    ix, rhs = str:match(safe_sep.." *()(.-) *$")
     if ix ~= nil then
       rhss[n]       = { rhs }
       current_block = { ix = n, col = ix }
@@ -102,7 +103,7 @@ local function convert_lines(sep, lines)
       for j, rhs in ipairs(rhss[i]) do
         if j == 1 then
           local lp = string.rep(" ", sign_col - lhs:len() - 1)
-          local rp = " "
+          local rp = rhs:len() > 0 and " " or ""
           table.insert(outputs, lw..lhs..lp..sep..rp..rhs)
         else
           local lp = string.rep(" ", sign_col + sep:len())
@@ -132,6 +133,7 @@ local function align_with(sep)
   end)
 end
 
+align_with("),")
 
 return {
   align_with = align_with,
