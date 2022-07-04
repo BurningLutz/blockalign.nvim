@@ -32,74 +32,81 @@ end
 
 
 local function convert_lines(sep, lines)
-  local strings = {}
-  local outputs = {}
-  local l_parts = {}
-  local r_parts = {}
-  local sign_col = 1
-  local current_block = nil
-  local current_block_col = nil
+  local n              = 0
+  local outputs        = {}
+  local lhss           = {}
+  local rhss           = {}
+  local lhs_maxlen     = 0
+  local current_block  = nil
   local leading_spaces = nil
 
-  local n = 0
-  for str in lines:gmatch("[^\n]+") do
+  for str in (lines.."\n"):gmatch("(.-)\n") do
+    local ix, l_ix, r_ix, lhs, rhs
+
     n = n + 1
 
-    table.insert(strings, str)
-
     if leading_spaces == nil then
-      local ix = str:find(sep)
+      ix = str:find(sep)
       if ix ~= nil then
         leading_spaces = str:match("^ *"):len()
       end
     end
 
     if current_block ~= nil then
-      local l_ix, r_ix = str:match("^ *().-() *$")
-      if l_ix >= current_block_col then
-        local sub = str:sub(current_block_col, r_ix - 1)
-        table.insert(r_parts[current_block], sub)
+      l_ix, r_ix = str:match("^ *().-() *$")
+      if l_ix >= current_block.col then
+        local sub = str:sub(current_block.col, r_ix - 1)
+        table.insert(rhss[current_block.ix], sub)
 
         goto continue
       end
     end
 
-    local l_part = str:match("^ *(.-) *"..sep) or ""
-    table.insert(l_parts, l_part)
-    if l_part:len() > sign_col then
-      sign_col = l_part:len()
+    lhs     = str:match("^ *(.-) *"..sep)
+    lhss[n] = lhs
+    if lhs ~= nil and lhs:len() > lhs_maxlen then
+      lhs_maxlen = lhs:len()
     end
 
-    local ix, r_part = str:match(sep.." *()(.-) *$")
+    ix, rhs = str:match(sep.." *()(.-) *$")
     if ix ~= nil then
-      table.insert(r_parts, {r_part})
-      current_block = n
-      current_block_col = ix
+      rhss[n]       = { rhs }
+      current_block = { ix = n, col = ix }
     else
-      table.insert(r_parts, {str})
+      rhss[n]       = { str }
       current_block = nil
-      current_block_col = nil
     end
 
     ::continue::
   end
 
-  sign_col = sign_col + 1
   ---@diagnostic disable-next-line: param-type-mismatch
   local lw = string.rep(" ", leading_spaces)
+  local sign_col
+  if lhs_maxlen > 0 then
+    sign_col = lhs_maxlen + 2
+  else
+    sign_col = 1
+  end
 
-  for i, l in ipairs(l_parts) do
-    if l:len() == 0 then
-      table.insert(outputs, r_parts[i][1])
+  for i = 1, n do
+    local lhs = lhss[i]
+
+    if lhs == nil then
+      local rhs = rhss[i]
+
+      if rhs ~= nil then
+        table.insert(outputs, rhss[i][1])
+      end
     else
-      for j, r in ipairs(r_parts[i]) do
+      for j, rhs in ipairs(rhss[i]) do
         if j == 1 then
-          local lp = string.rep(" ", sign_col - l:len())
+          local lp = string.rep(" ", sign_col - lhs:len() - 1)
           local rp = " "
-          table.insert(outputs, lw..l..lp..sep..rp..r)
+          table.insert(outputs, lw..lhs..lp..sep..rp..rhs)
         else
-          local lp = string.rep(" ", sign_col + sep:len() + 1)
-          table.insert(outputs, lw..lp..r)
+          local lp = string.rep(" ", sign_col + sep:len())
+          table.insert(outputs, lw..lp..rhs)
         end
       end
     end
