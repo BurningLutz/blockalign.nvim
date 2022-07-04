@@ -7,7 +7,7 @@ vmap <silent> <Leader>a= :call <SID>align_with("=")<CR>
 vmap <silent> <Leader>a: :call <SID>align_with(":")<CR>
 vmap <silent> <Leader>a, :call <SID>align_with(",")<CR>
 
-command -range -nargs=1 BlockAlign <SID>align_with(<args>)
+command -range -nargs=1 BlockAlign call <SID>align_with("<args>")
 
 function s:align_with(sep) range
   call v:lua.require'blockalign'.align_with(a:sep)
