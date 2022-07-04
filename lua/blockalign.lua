@@ -1,30 +1,37 @@
-local function protect_register(f)
-  local reg, reg_type, old_reg, old_reg_type
+local function guard_reg(regname, f)
+  local reg, regtype
 
   ---@diagnostic disable-next-line: missing-parameter
-  old_reg      = vim.fn.getreg('"')
-  old_reg_type = vim.fn.getregtype('"')
+  reg     = vim.fn.getreg(regname)
+  regtype = vim.fn.getregtype(regname)
 
-  vim.api.nvim_exec("silent normal gvy", false)
-  reg_type = vim.fn.getregtype('"')
+  local ret = f()
 
-  if reg_type == "v" then
-    vim.api.nvim_exec("silent normal gvVy", false)
-  end
-
-  ---@diagnostic disable-next-line: missing-parameter
-  reg      = vim.fn.getreg('"')
-  reg_type = vim.fn.getregtype('"')
-
-  local ret = f(reg, reg_type)
-
-  vim.fn.setreg('"', old_reg, old_reg_type)
+  vim.fn.setreg(regname, reg, regtype)
 
   return ret
 end
 
 
-local function convert_lines(sign, lines)
+local function visual_selected()
+  local reg, regtype
+
+  vim.api.nvim_exec("silent normal gvy", false)
+  regtype = vim.fn.getregtype('"')
+
+  if regtype == "v" then
+    vim.api.nvim_exec("silent normal gvVy", false)
+  end
+
+  ---@diagnostic disable-next-line: missing-parameter
+  reg     = vim.fn.getreg('"')
+  regtype = vim.fn.getregtype('"')
+
+  return reg, regtype
+end
+
+
+local function convert_lines(sep, lines)
   local strings = {}
   local outputs = {}
   local l_parts = {}
@@ -41,7 +48,7 @@ local function convert_lines(sign, lines)
     table.insert(strings, str)
 
     if leading_spaces == nil then
-      local ix = str:find(sign)
+      local ix = str:find(sep)
       if ix ~= nil then
         leading_spaces = str:match("^ *"):len()
       end
@@ -57,13 +64,13 @@ local function convert_lines(sign, lines)
       end
     end
 
-    local l_part = str:match("^ *(.-) *"..sign) or ""
+    local l_part = str:match("^ *(.-) *"..sep) or ""
     table.insert(l_parts, l_part)
     if l_part:len() > sign_col then
       sign_col = l_part:len()
     end
 
-    local ix, r_part = str:match(sign.." *()(.-) *$")
+    local ix, r_part = str:match(sep.." *()(.-) *$")
     if ix ~= nil then
       table.insert(r_parts, {r_part})
       current_block = n
@@ -89,9 +96,9 @@ local function convert_lines(sign, lines)
         if j == 1 then
           local lp = string.rep(" ", sign_col - l:len())
           local rp = " "
-          table.insert(outputs, lw..l..lp..sign..rp..r)
+          table.insert(outputs, lw..l..lp..sep..rp..r)
         else
-          local lp = string.rep(" ", sign_col + sign:len() + 1)
+          local lp = string.rep(" ", sign_col + sep:len() + 1)
           table.insert(outputs, lw..lp..r)
         end
       end
@@ -102,13 +109,19 @@ local function convert_lines(sign, lines)
 end
 
 
-local function align_with(sign)
-  protect_register(function (lines, reg_type)
-    local outputs = convert_lines(sign, lines)
+local function visual_replace(text, regtype)
+  vim.fn.setreg('"', text, regtype)
+  vim.api.nvim_command("normal gvp")
+end
 
-    local output = table.concat(outputs, "\n")
-    vim.fn.setreg('"', output, reg_type)
-    vim.api.nvim_command("normal gvp")
+
+local function align_with(sep)
+  guard_reg('"', function ()
+    local text, regtype = visual_selected()
+    local outputs       = convert_lines(sep, text)
+
+    local replacement = table.concat(outputs, "\n")
+    visual_replace(replacement, regtype)
   end)
 end
 
