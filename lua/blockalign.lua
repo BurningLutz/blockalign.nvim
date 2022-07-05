@@ -72,7 +72,7 @@ local function convert_lines(sep, lines)
     ix, rhs = str:match(safe_sep.." *()(.-) *$")
     if ix ~= nil then
       rhss[n]       = { rhs }
-      current_block = { ix = n, col = ix }
+      current_block = rhs:len() > 0 and { ix = n, col = ix } or nil
     else
       rhss[n]       = { str }
       current_block = nil
@@ -133,7 +133,6 @@ local function align_with(sep)
   end)
 end
 
-align_with("),")
 
 return {
   align_with = align_with,
