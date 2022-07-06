@@ -47,7 +47,7 @@ local function convert_lines(sep, lines)
     n = n + 1
 
     if leading_spaces == nil then
-      ix = str:find(sep)
+      ix = str:find(safe_sep)
       if ix ~= nil then
         leading_spaces = str:match("^ *"):len()
       end
