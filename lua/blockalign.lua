@@ -82,7 +82,7 @@ local function convert_lines(sep, lines)
   end
 
   ---@diagnostic disable-next-line: param-type-mismatch
-  local lw = string.rep(" ", leading_spaces)
+  local lw = string.rep(" ", leading_spaces or 0)
   local sign_col
   if lhs_maxlen > 0 then
     sign_col = lhs_maxlen + 2
