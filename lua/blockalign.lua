@@ -42,7 +42,7 @@ local function convert_lines(sep, lines)
   local leading_spaces = nil
 
   for str in (lines.."\n"):gmatch("(.-)\n") do
-    local ix, l_ix, r_ix, lhs, rhs
+    local ix, lhs, rhs
 
     n = n + 1
 
@@ -54,9 +54,13 @@ local function convert_lines(sep, lines)
     end
 
     if current_block ~= nil then
-      l_ix, r_ix = str:match("^ *().-() *$")
-      if l_ix >= current_block.col then
-        local sub = str:sub(current_block.col, r_ix - 1)
+      local lix, rix = str:match("^ *().-() *$")
+      local lix_u    = lix <= str:len() and vim.str_utfindex(str, lix) or lix
+
+      if lix_u >= current_block.col then
+        lix       = vim.str_byteindex(str, current_block.col)
+        local sub = str:sub(lix, rix - 1)
+
         table.insert(rhss[current_block.ix], sub)
 
         goto continue
@@ -65,14 +69,15 @@ local function convert_lines(sep, lines)
 
     lhs     = str:match("^ *(.-) *"..safe_sep)
     lhss[n] = lhs
-    if lhs ~= nil and lhs:len() > lhs_maxlen then
-      lhs_maxlen = lhs:len()
+    if lhs ~= nil then
+      lhs_maxlen = math.max(lhs_maxlen, vim.str_utfindex(lhs))
     end
 
     ix, rhs = str:match(safe_sep.." *()(.-) *$")
     if ix ~= nil then
+      local ix_u    = vim.str_utfindex(str, ix)
       rhss[n]       = { rhs }
-      current_block = rhs:len() > 0 and { ix = n, col = ix } or nil
+      current_block = rhs:len() > 0 and { ix = n, col = ix_u } or nil
     else
       rhss[n]       = { str }
       current_block = nil
@@ -102,11 +107,15 @@ local function convert_lines(sep, lines)
     else
       for j, rhs in ipairs(rhss[i]) do
         if j == 1 then
-          local lp = string.rep(" ", sign_col - lhs:len() - 1)
-          local rp = rhs:len() > 0 and " " or ""
+          local lhs_len = vim.str_utfindex(lhs)
+          local lp      = string.rep(" ", sign_col - lhs_len - 1)
+          local rp      = rhs:len() > 0 and " " or ""
+
           table.insert(outputs, lw..lhs..lp..sep..rp..rhs)
         else
-          local lp = string.rep(" ", sign_col + sep:len())
+          local sep_len = vim.str_utfindex(sep)
+          local lp      = string.rep(" ", sign_col + sep_len)
+
           table.insert(outputs, lw..lp..rhs)
         end
       end
