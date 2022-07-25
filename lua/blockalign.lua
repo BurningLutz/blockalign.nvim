@@ -75,7 +75,7 @@ local function convert_lines(sep, lines)
 
     ix, rhs = str:match(safe_sep.." *()(.-) *$")
     if ix ~= nil then
-      local ix_u    = vim.str_utfindex(str, ix)
+      local ix_u    = ix <= str:len() and vim.str_utfindex(str, ix) or ix
       rhss[n]       = { rhs }
       current_block = rhs:len() > 0 and { ix = n, col = ix_u } or nil
     else
