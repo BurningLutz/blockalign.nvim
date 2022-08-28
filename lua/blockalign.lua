@@ -1,13 +1,16 @@
+local fn = vim.fn
+
+
 local function guard_reg(regname, f)
   local reg, regtype
 
   ---@diagnostic disable-next-line: missing-parameter
-  reg     = vim.fn.getreg(regname)
-  regtype = vim.fn.getregtype(regname)
+  reg     = fn.getreg(regname)
+  regtype = fn.getregtype(regname)
 
   local ret = f()
 
-  vim.fn.setreg(regname, reg, regtype)
+  fn.setreg(regname, reg, regtype)
 
   return ret
 end
@@ -16,16 +19,16 @@ end
 local function visual_selected()
   local reg, regtype
 
-  vim.api.nvim_exec("silent normal gvy", false)
-  regtype = vim.fn.getregtype('"')
+  vim.cmd "silent normal gvy"
+  regtype = fn.getregtype('"')
 
   if regtype == "v" then
-    vim.api.nvim_exec("silent normal gvVy", false)
+    vim.cmd "silent normal gvVy"
   end
 
   ---@diagnostic disable-next-line: missing-parameter
-  reg     = vim.fn.getreg('"')
-  regtype = vim.fn.getregtype('"')
+  reg     = fn.getreg('"')
+  regtype = fn.getregtype('"')
 
   return reg, regtype
 end
@@ -127,8 +130,8 @@ end
 
 
 local function visual_replace(text, regtype)
-  vim.fn.setreg('"', text, regtype)
-  vim.api.nvim_command("normal gvp")
+  fn.setreg('"', text, regtype)
+  vim.cmd "normal gvp"
 end
 
 
@@ -143,6 +146,5 @@ local function align_with(sep)
 end
 
 
-return {
-  align_with = align_with,
-}
+return { align_with = align_with
+       }
