@@ -10,7 +10,7 @@ vmap <silent> <Leader>A= :call <SID>align_with("=", v:false)<CR>
 vmap <silent> <Leader>A: :call <SID>align_with(":", v:false)<CR>
 vmap <silent> <Leader>A, :call <SID>align_with(",", v:false)<CR>
 
-command -range -nargs=1 BlockAlign call <SID>align_with("<args>")
+command -range -nargs=1 BlockAlign call <SID>align_with("<args>", v:true)
 
 function s:align_with(sep, has_padding) range
   call v:lua.require('blockalign').align_with(a:sep, a:has_padding)
