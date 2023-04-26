@@ -4,7 +4,6 @@ local fn = vim.fn
 local function guard_reg(regname, f)
   local reg, regtype
 
-  ---@diagnostic disable-next-line: missing-parameter
   reg     = fn.getreg(regname)
   regtype = fn.getregtype(regname)
 
@@ -19,14 +18,13 @@ end
 local function visual_selected()
   local reg, regtype
 
-  vim.cmd "silent normal gvy"
+  vim.cmd "silent normal gvzy"
   regtype = fn.getregtype('"')
 
   if regtype == "v" then
-    vim.cmd "silent normal gvVy"
+    vim.cmd "silent normal gvVzy"
   end
 
-  ---@diagnostic disable-next-line: missing-parameter
   reg     = fn.getreg('"')
   regtype = fn.getregtype('"')
 
@@ -34,7 +32,7 @@ local function visual_selected()
 end
 
 
-local function convert_lines(sep, lines)
+local function convert_lines(sep, lines, padding)
   local n              = 0
   local lhss           = {}
   local rhss           = {}
@@ -89,7 +87,6 @@ local function convert_lines(sep, lines)
     ::continue::
   end
 
-  ---@diagnostic disable-next-line: param-type-mismatch
   local lw = string.rep(" ", leading_spaces or 0)
   local sign_col
   if lhs_maxlen > 0 then
@@ -111,13 +108,13 @@ local function convert_lines(sep, lines)
       for j, rhs in ipairs(rhss[i]) do
         if j == 1 then
           local lhs_len = vim.str_utfindex(lhs)
-          local lp      = string.rep(" ", sign_col - lhs_len - 1)
-          local rp      = rhs:len() > 0 and " " or ""
+          local lp      = string.rep(" ", sign_col - lhs_len + padding - 2)
+          local rp      = rhs:len() > 0 and string.rep(" ", padding) or ""
 
           table.insert(outputs, lw..lhs..lp..sep..rp..rhs)
         else
           local sep_len = vim.str_utfindex(sep)
-          local lp      = string.rep(" ", sign_col + sep_len)
+          local lp      = string.rep(" ", sign_col + sep_len + padding - 1)
 
           table.insert(outputs, lw..lp..rhs)
         end
@@ -135,10 +132,11 @@ local function visual_replace(text, regtype)
 end
 
 
-local function align_with(sep)
+local function align_with(sep, has_padding)
   guard_reg('"', function ()
+    local padding       = has_padding and 1 or 0
     local text, regtype = visual_selected()
-    local outputs       = convert_lines(sep, text)
+    local outputs       = convert_lines(sep, text, padding)
 
     local replacement = table.concat(outputs, "\n")
     visual_replace(replacement, regtype)
